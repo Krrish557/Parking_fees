@@ -1,78 +1,122 @@
-flag = True  # Controls the main loop of the program
-main_text = "\nWelcome to Utopia Parking\nMenu:\n1. View Rates\n2. Check-in and Check-out\n3. Exit "
+import turtle
+import random
 
-while flag:
-    print(main_text)
+# Constants
+COLUMNS = 12
+ROWS = 6
 
-    opt = int(input(" >> Select an option: "))
-
-    if opt == 1:  # Display parking rates
-        print('''
-Time range:    Fees 
-0-1 hour       $19
-1-2 hours      $29 
-2-3 hours      $79 
-3-24 hours     $89\n\n''')
-
-    elif opt == 2:  # Handle Check-in and Check-out process
-        print("\nCheck-in Time:")
-        ch_in_h = int(input(" >> hour (0-23): "))
-        ch_in_m = int(input(" >> minute (0-59): "))
-
-        print("\nCheck-out Time:")
-        ch_out_h = int(input(" >> hour (0-23): "))
-        ch_out_m = int(input(" >> minute (0-59): "))
-
-        # Calculate total parking duration
-        hour_diff = ch_out_h - ch_in_h
-        minute_diff = ch_out_m - ch_in_m
-
-        if minute_diff < 0:  # Adjust if minute difference is negative
-            hour_diff -= 1
-            minute_diff += 60
-
-        print(f"** Total parking time: {hour_diff} hours and {minute_diff} minutes")
-
-        # Determine parking fee based on time spent
-        if hour_diff == 0 and minute_diff > 0:
-            cash_ask = 19
-            print("** Total fees: $19")
-        elif hour_diff == 1 and minute_diff >= 0:
-            cash_ask = 29
-            print("** Total fees: $29")
-        elif hour_diff == 2 and minute_diff >= 0:
-            cash_ask = 79
-            print("** Total fees: $79")
-        elif hour_diff >= 3:
-            cash_ask = 89
-            print("** Total fees: $89")
-        else:
-            print("Invalid Check-out time. Please check your input.")
-            continue  # Restart the loop if invalid input
-
-        # Payment processing
-        cash_ask_text = ">> Insert cash amount: (1, 2, 5, 10, 20, 50, 100 only)\n"
-        total_collected = 0
-
-        while total_collected < cash_ask:  # Loop until the required amount is collected
-            cash_submitted = int(input(cash_ask_text))
-            total_collected += cash_submitted
-            remaining = cash_ask - total_collected
-
-            print(f"** Total collected: ${total_collected}")
-            print(f"** Remaining: ${remaining if remaining > 0 else 0}")
-
-            if total_collected >= cash_ask:
-                change = total_collected - cash_ask
-                if change > 0:
-                    print(f"** Change due: ${change}")
-                    input("** Please collect your change. Press ENTER when done...")  # Pause for user to collect change
-                print("Thanks for parking with us!")
-                break  # Exit the payment loop
-
-    elif opt == 3:  # Exit the program
-        print("Exiting...")
-        flag = False  # Stops the loop
-
+def get_availability_percentage(hour):
+    if 7 <= hour <= 11:
+        return 0.2
+    elif 12 <= hour <= 17:
+        return 0.5
     else:
-        print("Invalid option. Please try again.")  # Handle incorrect menu choices
+        return 0.8
+
+def generate_available_spots(availability_percentage):
+    total_spots = ROWS * COLUMNS
+    available_count = int(total_spots * availability_percentage)
+    all_spots = [(row, col) for row in range(ROWS) for col in range(COLUMNS)]
+    return set(random.sample(all_spots, available_count))
+
+def draw_spot(t, x, y, width, height, color):
+    t.penup()
+    t.goto(x, y)
+    t.pendown()
+    t.fillcolor(color)
+    t.begin_fill()
+    for _ in range(2):
+        t.forward(width)
+        t.left(90)
+        t.forward(height)
+        t.left(90)
+    t.end_fill()
+
+def draw_parking_grid(t, available_spots, origin_x, origin_y, cell_w, cell_h, h_gap, v_gap):
+    for row in range(ROWS):
+        for col in range(COLUMNS):
+            is_left = col < 6
+            block_x = origin_x if is_left else origin_x + (6 * cell_w) + h_gap
+
+            section_row = row // 2
+            y = origin_y - (row * cell_h) - (section_row * v_gap)
+            x = block_x + (col % 6) * cell_w
+
+            color = "white" if (row, col) in available_spots else "red"
+            draw_spot(t, x, y, cell_w, cell_h, color)
+
+def draw_legend(t, x_start, y_start):
+    t.penup()
+    t.goto(x_start, y_start)
+    t.pendown()
+    t.fillcolor("white")
+    t.begin_fill()
+    for _ in range(2):
+        t.forward(20)
+        t.left(90)
+        t.forward(20)
+        t.left(90)
+    t.end_fill()
+    t.penup()
+    t.goto(x_start + 25, y_start + 5)
+    t.write("Available", font=("Arial", 10, "normal"))
+
+    t.penup()
+    t.goto(x_start + 120, y_start)
+    t.pendown()
+    t.fillcolor("red")
+    t.begin_fill()
+    for _ in range(2):
+        t.forward(20)
+        t.left(90)
+        t.forward(20)
+        t.left(90)
+    t.end_fill()
+    t.penup()
+    t.goto(x_start + 145, y_start + 5)
+    t.write("Unavailable", font=("Arial", 10, "normal"))
+
+def main():
+    while True:
+        try:
+            hour = int(input("Enter check-in hour (0–23): "))
+            if 0 <= hour <= 23:
+                break
+            else:
+                print("Enter hour between 0 and 23.")
+        except ValueError:
+            print("Invalid input.")
+
+    percent = get_availability_percentage(hour)
+    spots = generate_available_spots(percent)
+
+    screen = turtle.Screen()
+    screen.title("Parking Layout Viewer")
+    screen.setup(width=600, height=800)
+    screen.tracer(0)
+    screen.bgcolor("#f0f0f0")
+
+    t = turtle.Turtle()
+    t.hideturtle()
+    t.speed(0)
+
+    # Dimensions and spacing
+    cell_w = 40
+    cell_h = 25
+    h_gap = 60
+    v_gap = 15
+
+    # Start drawing from top-left
+    grid_total_height = ROWS * cell_h + (ROWS // 2) * v_gap
+    grid_origin_y = grid_total_height // 2
+    grid_origin_x = - (6 * cell_w + h_gap // 2)
+
+    draw_parking_grid(t, spots, grid_origin_x, grid_origin_y, cell_w, cell_h, h_gap, v_gap)
+
+    draw_legend(t, -80, -360)
+
+    screen.update()
+    screen.mainloop()
+
+if __name__ == "__main__":
+    main()
