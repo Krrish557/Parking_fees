@@ -4,6 +4,8 @@ import random
 # Constants
 COLUMNS = 12
 ROWS = 6
+COLUMN_LABELS = [chr(ord('A') + i) for i in range(COLUMNS)]
+ROW_LABELS = [str(i + 1) for i in range(ROWS)]
 
 def get_availability_percentage(hour):
     if 7 <= hour <= 11:
@@ -45,7 +47,23 @@ def draw_parking_grid(t, available_spots, origin_x, origin_y, cell_w, cell_h, h_
             color = "white" if (row, col) in available_spots else "red"
             draw_spot(t, x, y, cell_w, cell_h, color)
 
+    for row in range(ROWS):
+        section_row = row // 2
+        y = origin_y - (row * cell_h) - (section_row * v_gap) + cell_h / 4
+        t.penup()
+        t.goto(origin_x + 6 * cell_w + h_gap / 2 - 5, y)
+        t.write(str(ROWS - row), align="center", font=("Arial", 10, "bold"))
+
+    for col in range(COLUMNS):
+        label_x = origin_x + (col % 6) * cell_w
+        if col >= 6:
+            label_x += 6 * cell_w + h_gap
+        t.penup()
+        t.goto(label_x + cell_w / 2, origin_y - ROWS * cell_h - 2 * v_gap)
+        t.write(COLUMN_LABELS[col], align="center", font=("Arial", 10, "bold"))
+
 def draw_legend(t, x_start, y_start):
+    # Available box
     t.penup()
     t.goto(x_start, y_start)
     t.pendown()
@@ -61,6 +79,7 @@ def draw_legend(t, x_start, y_start):
     t.goto(x_start + 25, y_start + 5)
     t.write("Available", font=("Arial", 10, "normal"))
 
+    # Unavailable box
     t.penup()
     t.goto(x_start + 120, y_start)
     t.pendown()
@@ -92,7 +111,7 @@ def main():
 
     screen = turtle.Screen()
     screen.title("Parking Layout Viewer")
-    screen.setup(width=600, height=800)
+    screen.setup(width=800, height=800)  # fixed 800x800 window
     screen.tracer(0)
     screen.bgcolor("#f0f0f0")
 
@@ -101,19 +120,16 @@ def main():
     t.speed(0)
 
     # Dimensions and spacing
-    cell_w = 40
-    cell_h = 25
-    h_gap = 60
-    v_gap = 15
+    cell_w = 50
+    cell_h = 50
+    h_gap = 100
+    v_gap = 20
 
-    # Start drawing from top-left
-    grid_total_height = ROWS * cell_h + (ROWS // 2) * v_gap
-    grid_origin_y = grid_total_height // 2
     grid_origin_x = - (6 * cell_w + h_gap // 2)
+    grid_origin_y = 250  # centered in 800px
 
     draw_parking_grid(t, spots, grid_origin_x, grid_origin_y, cell_w, cell_h, h_gap, v_gap)
-
-    draw_legend(t, -80, -360)
+    draw_legend(t, -80, -300)  # move legend lower
 
     screen.update()
     screen.mainloop()
