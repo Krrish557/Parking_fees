@@ -1,7 +1,6 @@
 import turtle
 import random
 
-# Constants
 COLUMNS = 12
 ROWS = 6
 COLUMN_LABELS = [chr(ord('A') + i) for i in range(COLUMNS)]
@@ -34,7 +33,7 @@ def draw_spot(t, x, y, width, height, color):
         t.left(90)
     t.end_fill()
 
-def draw_parking_grid(t, available_spots, origin_x, origin_y, cell_w, cell_h, h_gap, v_gap):
+def draw_parking_grid(t, available_spots, origin_x, origin_y, cell_w, cell_h, h_gap, v_gap, unavailable_color):
     for row in range(ROWS):
         for col in range(COLUMNS):
             is_left = col < 6
@@ -44,7 +43,7 @@ def draw_parking_grid(t, available_spots, origin_x, origin_y, cell_w, cell_h, h_
             y = origin_y - (row * cell_h) - (section_row * v_gap)
             x = block_x + (col % 6) * cell_w
 
-            color = "white" if (row, col) in available_spots else "red"
+            color = "white" if (row, col) in available_spots else unavailable_color
             draw_spot(t, x, y, cell_w, cell_h, color)
 
     for row in range(ROWS):
@@ -62,8 +61,7 @@ def draw_parking_grid(t, available_spots, origin_x, origin_y, cell_w, cell_h, h_
         t.goto(label_x + cell_w / 2, origin_y - ROWS * cell_h - 2 * v_gap)
         t.write(COLUMN_LABELS[col], align="center", font=("Arial", 10, "bold"))
 
-def draw_legend(t, x_start, y_start):
-    # Available box
+def draw_legend(t, x_start, y_start, unavailable_color):
     t.penup()
     t.goto(x_start, y_start)
     t.pendown()
@@ -79,11 +77,10 @@ def draw_legend(t, x_start, y_start):
     t.goto(x_start + 25, y_start + 5)
     t.write("Available", font=("Arial", 10, "normal"))
 
-    # Unavailable box
     t.penup()
     t.goto(x_start + 120, y_start)
     t.pendown()
-    t.fillcolor("red")
+    t.fillcolor(unavailable_color)
     t.begin_fill()
     for _ in range(2):
         t.forward(20)
@@ -96,6 +93,7 @@ def draw_legend(t, x_start, y_start):
     t.write("Unavailable", font=("Arial", 10, "normal"))
 
 def main():
+    print("Welcome to the Availability Visualiser!")
     while True:
         try:
             hour = int(input("Enter check-in hour (0–23): "))
@@ -106,30 +104,38 @@ def main():
         except ValueError:
             print("Invalid input.")
 
+    bg_color = input("Choose a Background color (lightgrey, skyblue, yellow)\n>> Background Color (default lightgrey): ").strip().lower()
+    if bg_color not in ["lightgrey", "skyblue", "yellow"]:
+        bg_color = "lightgrey"
+
+    unavailable_color = input("Choose an unavailable spot color (red, green, blue)\n>> Unavailable Color (default red): ").strip().lower()
+    if unavailable_color not in ["red", "green", "blue"]:
+        unavailable_color = "red"
+
     percent = get_availability_percentage(hour)
+    print(f"Average parking availability: {int(percent * 100)}%")
+
     spots = generate_available_spots(percent)
 
     screen = turtle.Screen()
     screen.title("Parking Layout Viewer")
-    screen.setup(width=800, height=800)  # fixed 800x800 window
-    screen.tracer(0)
-    screen.bgcolor("#f0f0f0")
+    screen.setup(width=800, height=800)
+    screen.bgcolor(bg_color)
 
     t = turtle.Turtle()
     t.hideturtle()
     t.speed(0)
 
-    # Dimensions and spacing
     cell_w = 50
     cell_h = 50
     h_gap = 100
     v_gap = 20
 
     grid_origin_x = - (6 * cell_w + h_gap // 2)
-    grid_origin_y = 250  # centered in 800px
+    grid_origin_y = 250
 
-    draw_parking_grid(t, spots, grid_origin_x, grid_origin_y, cell_w, cell_h, h_gap, v_gap)
-    draw_legend(t, -80, -300)  # move legend lower
+    draw_parking_grid(t, spots, grid_origin_x, grid_origin_y, cell_w, cell_h, h_gap, v_gap, unavailable_color)
+    draw_legend(t, -350, -150, unavailable_color)
 
     screen.update()
     screen.mainloop()
